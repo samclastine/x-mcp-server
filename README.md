@@ -1,21 +1,21 @@
 # x-mcp-server
 
-Production-ready scaffold for an X (Twitter) posting tool intended to be exposed by a Model Context Protocol (MCP) server. It includes a small client for OAuth 1.0a signed requests and a tool function you can register in your MCP server.
+Production-ready scaffold for an X (Twitter) toolset exposed by a Model Context Protocol (MCP) server. It includes a client for common endpoints and multiple MCP tools (post, profile, timelines, likes), with safe dry-run support.
 
 ## What this project is
 
 - Python package targeting Python 3.13+
 - Uses the `mcp` Python package (with CLI extras) to build an MCP-compliant server
 - Clean separation between:
-  - entry point (`main.py`)
-  - external service client(s) (`src/client.py`)
-  - tool implementations (`src/tools/**`)
+	- entry point / server (`src/server.py`)
+	- external service client(s) (`src/client.py`)
+	- tool implementations (`src/tools/**`)
 
 ## Repository structure
 
 ```
 .
-├─ main.py                  # Entrypoint placeholder
+├─ server.py                # MCP server exposing tools over STDIO
 ├─ pyproject.toml           # Project metadata and dependencies
 ├─ uv.lock                  # Lockfile (suggests use of the UV package manager)
 ├─ README.md                # You are here
@@ -23,15 +23,17 @@ Production-ready scaffold for an X (Twitter) posting tool intended to be exposed
 	├─ client.py             # XClient with OAuth1 posting
 	└─ tools/
 		└─ func/
-			└─ x_post.py       # Tool: post_to_x(text, ...)
+			├─ x_post.py              # Tool: post_to_x(text, ...)
+			├─ x_me.py                # Tool: get_x_me(...)
+			├─ x_get_posts_by_id.py   # Tool: get_posts_by_id(...)
+			├─ x_my_timeline.py       # Tool: x_my_timeline(...)
+			└─ x_like.py              # Tool: like_tweet_by_tweetId(...)
 ```
 
 ## Current behavior
 
-- Provides an OAuth 1.0a–signed client for posting to X using user context.
-- Exposes a tool function `post_to_x(text, media_url=None, metadata=None, dry_run=True)` you can register in an MCP server.
-- When `dry_run=True` (default), it returns the request details without making a network call.
-- When `dry_run=False` and OAuth1 credentials are configured, it attempts to POST to `https://api.x.com/2/tweets`.
+- Provides an OAuth 1.0a–capable client for X APIs and a collection of MCP tools.
+- All tools support `dry_run=True` to return the assembled request (URL, headers, params/payload) without making a network call.
 
 ## Tech stack
 
@@ -100,7 +102,7 @@ You can run the included MCP server that exposes `x_post` over STDIO, or import 
 
 ### Run the included MCP server
 
-This starts a FastMCP server named `x-post` that exposes the `x_post` tool.
+This starts a FastMCP server named `x-post` that exposes the tools below over STDIO.
 
 With UV (recommended):
 ```powershell
@@ -112,13 +114,54 @@ With Python directly:
 python src/server.py
 ```
 
-Use any MCP-compatible client to call the `x_post` tool with parameters:
-- text (str, required)
-- media_url (str, optional)
-- metadata (object, optional)
-- dry_run (bool, default true)
+Use any MCP-compatible client to call the tools documented below.
 
-### Use the function directly (non-MCP)
+## Available MCP tools
+
+Each tool supports `dry_run` (default True) to safely preview the outbound request.
+
+1) x_post
+	 - Action: Post text to X (Tweets)
+	 - Endpoint: POST /2/tweets
+	 - Inputs:
+		 - text (string, required)
+		 - media_url (string, optional)
+		 - metadata (object, optional)
+		 - dry_run (boolean, default true)
+	 - Auth: Requires OAuth1 user context for live posting
+
+2) x_me
+	 - Action: Get the authenticated user's profile
+	 - Endpoint: GET /2/users/me
+	 - Inputs:
+		 - user_fields (string[]), expansions (string[]), tweet_fields (string[]), dry_run (boolean)
+	 - Auth: Requires OAuth1 user context for live calls
+
+3) get_posts_by_id
+	 - Action: Get posts authored by a specific user by ID
+	 - Endpoint: GET /2/users/{id}/tweets
+	 - Inputs:
+		 - user_id (string, required)
+		 - since_id, until_id, max_results, pagination_token, exclude (string[]), start_time, end_time, tweet_fields (string[]), dry_run
+	 - Auth: Prefers App Bearer (read), falls back to OAuth1
+
+4) x_my_timeline (and alias get__my_timeline)
+	 - Action: Get reverse-chronological timeline for the authenticated user
+	 - Endpoint: GET /2/users/:id/timelines/reverse_chronological
+	 - Inputs:
+		 - limit (integer >= 1), pagination (string), dry_run (boolean)
+	 - Auth: Requires OAuth1 user context for live calls (resolves :id via /users/me)
+
+5) like_tweet_by_tweetId
+	 - Action: Like a Tweet by ID on behalf of the authenticated user
+	 - Endpoint: POST /2/users/{id}/likes
+	 - Inputs:
+		 - tweet_id (string, required)
+		 - user_id (string, optional; if omitted in live mode, resolved via /users/me)
+		 - dry_run (boolean)
+	 - Auth: Requires OAuth1 user context for live calls
+
+### Use the functions directly (non-MCP)
 
 A minimal example:
 
@@ -130,11 +173,23 @@ print(post_to_x(text="Hello from MCP tool", dry_run=True))
 
 # Live post (requires OAuth1 credentials and write permission):
 print(post_to_x(text="Posting via MCP tool", dry_run=False))
+
+# Dry-run examples for other tools
+from src.tools.func.x_me import get_x_me
+from src.tools.func.x_get_posts_by_id import get_posts_by_id
+from src.tools.func.x_my_timeline import x_my_timeline
+from src.tools.func.x_like import like_tweet_by_tweetId
+
+print(get_x_me(dry_run=True))
+print(get_posts_by_id(user_id="2244994945", max_results=5, dry_run=True))
+print(x_my_timeline(limit=25, dry_run=True))
+print(like_tweet_by_tweetId(tweet_id="1346889436626259968", dry_run=True))
 ```
 
 Notes:
-- Posting requires OAuth 1.0a user context credentials and an X plan that permits write access.
-- If only a bearer token or OAuth2 client credentials are present, the tool will return a clear error explaining that user context is required for posting.
+- Live posting and write actions require OAuth 1.0a user context credentials and an X plan that permits write access.
+- Read endpoints may work with App Bearer; user-context endpoints require OAuth1.
+- All tools support `dry_run=True` so you can preview requests without hitting the network.
 
 ## Roadmap to a working MCP server
 

@@ -21,6 +21,10 @@ if str(_REPO_ROOT) not in _sys.path:
     _sys.path.insert(0, str(_REPO_ROOT))
 
 from src.tools.func.x_post import post_to_x
+from src.tools.func.x_me import get_x_me
+from src.tools.func.x_get_posts_by_id import get_posts_by_id as _get_posts_by_id
+from src.tools.func.x_my_timeline import x_my_timeline as _x_my_timeline
+from src.tools.func.x_like import like_tweet_by_tweetId as _like_tweet_by_tweetId
 
 
 # ── logging to STDERR ─────────────────────────────────────────────────────────
@@ -45,6 +49,102 @@ def x_post(
     - dry_run=False attempts a live POST (requires OAuth1 credentials with write permissions).
     """
     return post_to_x(text=text, media_url=media_url, metadata=metadata, dry_run=dry_run)
+
+
+@mcp.tool()
+def x_me(
+    user_fields: Optional[list[str]] = None,
+    expansions: Optional[list[str]] = None,
+    tweet_fields: Optional[list[str]] = None,
+    dry_run: bool = True,
+) -> Dict[str, Any]:
+    """Get the authenticated user's profile (GET /2/users/me).
+
+    - user_fields: A list of user fields to include (maps to 'user.fields').
+    - expansions: A list of expansions to include.
+    - tweet_fields: A list of tweet fields to include.
+    - dry_run=True (default) returns the request details without network calls.
+    """
+    return get_x_me(
+        user_fields=user_fields,
+        expansions=expansions,
+        tweet_fields=tweet_fields,
+        dry_run=dry_run,
+    )
+
+
+@mcp.tool()
+def get_posts_by_id(
+    user_id: str,
+    since_id: Optional[str] = None,
+    until_id: Optional[str] = None,
+    max_results: Optional[int] = None,
+    pagination_token: Optional[str] = None,
+    exclude: Optional[list[str]] = None,
+    start_time: Optional[str] = None,
+    end_time: Optional[str] = None,
+    tweet_fields: Optional[list[str]] = None,
+    dry_run: bool = True,
+) -> Dict[str, Any]:
+    """Get posts authored by a user ID (GET /2/users/{id}/tweets).
+
+    - Auth: Prefers app bearer; falls back to OAuth1.
+    - Supports common query params and dry-run mode.
+    """
+    return _get_posts_by_id(
+        user_id=user_id,
+        since_id=since_id,
+        until_id=until_id,
+        max_results=max_results,
+        pagination_token=pagination_token,
+        exclude=exclude,
+        start_time=start_time,
+        end_time=end_time,
+        tweet_fields=tweet_fields,
+        dry_run=dry_run,
+    )
+
+
+@mcp.tool()
+def x_my_timeline(
+    limit: Optional[int] = None,
+    pagination: Optional[str] = None,
+    dry_run: bool = True,
+) -> Dict[str, Any]:
+    """Get the reverse-chronological timeline for the authenticated user.
+
+    Endpoint: GET /2/users/:id/timelines/reverse_chronological
+    """
+    if limit is not None and limit < 1:
+        raise ValueError("limit must be >= 1")
+    return _x_my_timeline(limit=limit, pagination=pagination, dry_run=dry_run)
+
+
+@mcp.tool()
+def get__my_timeline(
+    limit: Optional[int] = None,
+    pagination: Optional[str] = None,
+    dry_run: bool = True,
+) -> Dict[str, Any]:
+    """Alias of x_my_timeline (GET /2/users/:id/timelines/reverse_chronological)."""
+    if limit is not None and limit < 1:
+        raise ValueError("limit must be >= 1")
+    return _x_my_timeline(limit=limit, pagination=pagination, dry_run=dry_run)
+
+
+@mcp.tool()
+def like_tweet_by_tweetId(
+    tweet_id: str,
+    user_id: Optional[str] = None,
+    dry_run: bool = True,
+) -> Dict[str, Any]:
+    """Like a Tweet by ID on behalf of the authenticated user (POST /2/users/{id}/likes).
+
+    - tweet_id: Target Tweet ID to like.
+    - user_id: Optional source user ID; if omitted in live mode, it will be resolved via /users/me.
+    - dry_run=True returns the request details without network calls.
+    """
+    return _like_tweet_by_tweetId(tweet_id=tweet_id, user_id=user_id, dry_run=dry_run)
 
 
 if __name__ == "__main__":
