@@ -1,6 +1,6 @@
 # x-mcp-server
 
-A minimal Model Context Protocol (MCP) server skeleton in Python. The layout is set up to expose "tools" (functions) to an MCP client. The naming and placeholder file `x_post.py` suggest this server will eventually include a tool for posting to the X (Twitter) API, but the implementation is left for you to fill in.
+Production-ready scaffold for an X (Twitter) posting tool intended to be exposed by a Model Context Protocol (MCP) server. It includes a small client for OAuth 1.0a signed requests and a tool function you can register in your MCP server.
 
 ## What this project is
 
@@ -15,23 +15,23 @@ A minimal Model Context Protocol (MCP) server skeleton in Python. The layout is 
 
 ```
 .
-├─ main.py                  # Current entrypoint (prints a greeting)
+├─ main.py                  # Entrypoint placeholder
 ├─ pyproject.toml           # Project metadata and dependencies
 ├─ uv.lock                  # Lockfile (suggests use of the UV package manager)
 ├─ README.md                # You are here
 └─ src/
-	├─ client.py             # Placeholder GenericClient for external APIs
+	├─ client.py             # XClient with OAuth1 posting
 	└─ tools/
 		└─ func/
-			└─ x_post.py       # Placeholder for a tool (e.g., post to X)
+			└─ x_post.py       # Tool: post_to_x(text, ...)
 ```
 
 ## Current behavior
 
-- Running `python main.py` prints: `Hello from x-mcp-server!`
-- There is no server wiring yet; `mcp` is declared as a dependency and ready to be used to expose tools.
-- `src/client.py` provides a `GenericClient` with a stubbed `make_request` method you can adapt for real APIs.
-- `src/tools/func/x_post.py` contains a stub you can flesh out with the logic to post to an external service (e.g., X/Twitter).
+- Provides an OAuth 1.0a–signed client for posting to X using user context.
+- Exposes a tool function `post_to_x(text, media_url=None, metadata=None, dry_run=True)` you can register in an MCP server.
+- When `dry_run=True` (default), it returns the request details without making a network call.
+- When `dry_run=False` and OAuth1 credentials are configured, it attempts to POST to `https://api.x.com/2/tweets`.
 
 ## Tech stack
 
@@ -65,79 +65,63 @@ uv sync
 python .\main.py
 ```
 
-You should see a greeting in the console.
+This repository ships a tool and client; the `main.py` is a placeholder. You’ll typically import and register the tool in your MCP server process.
 
-## Configure authentication for X API
+## Configure authentication for X API (step by step)
 
-Anyone can bring their own X API credentials and use this MCP server.
+Anyone can bring their own X API credentials and use this tool.
 
-1) Obtain credentials (summary from X docs):
-	 - Create a developer account and an App (Project + App)
-	 - Save these credentials securely:
-		 - API Key and Secret (OAuth 1.0a)
-		 - Access Token and Secret (OAuth 1.0a user context)
-		 - Client ID and Client Secret (OAuth 2.0)
-		 - App-only Access Token (Bearer) for public data
+1) Sign up and create an App
+- Go to the X Developer Portal and create a Project + App.
+- In User authentication settings, enable OAuth 1.0a and set App permissions to “Read and write”.
+- Provide a Callback URL (e.g., http://localhost/callback) and Website URL if prompted.
 
-2) Create a `.env` file from the template and fill in values:
+2) Generate and save credentials (OAuth 1.0a user context)
+- API Key → `X_API_API_KEY`
+- API Key Secret → `X_API_API_KEY_SECRET`
+- Access Token → `X_API_ACCESS_TOKEN`
+- Access Token Secret → `X_API_ACCESS_TOKEN_SECRET`
 
+3) Create your local `.env`
 ```powershell
 Copy-Item .env.example .env
+# Open .env and paste the four OAuth1 values above
 ```
 
-Supported environment variables (prefix `X_API_`):
-- `API_KEY`
-- `API_KEY_SECRET`
-- `ACCESS_TOKEN`
-- `ACCESS_TOKEN_SECRET`
-- `CLIENT_ID`
-- `CLIENT_SECRET`
-- `APP_BEARER_TOKEN`
+4) Important: If you change App permissions to include write, regenerate the Access Token & Secret so they inherit write access, and update your `.env`.
 
-You only need one of these auth modes to start. For simple read-only/testing, `APP_BEARER_TOKEN` is easiest. For posting on behalf of a user, provide the OAuth 1.0a token set (API key/secret + access token/secret).
+Optional variables:
+- OAuth 2.0 client (for future flows): `X_API_CLIENT_ID`, `X_API_CLIENT_SECRET`
+- App-only bearer token (read-only): `X_API_APP_BEARER_TOKEN`
 
-3) Validate setup with a dry run:
+## Using the tool in your MCP server
 
-You can import and call the tool directly, or once the MCP server is wired, call it via the MCP client. For now, do a quick Python REPL test:
+Register the tool in your MCP server process and call it from your MCP client. A minimal example of using the function directly (non-MCP) looks like this:
 
-To avoid quoting issues in PowerShell, you can use the provided smoke script:
+```python
+from src.tools.func.x_post import post_to_x
 
-```powershell
-python .\scripts\smoke_post.py "Hello X from MCP!"
-```
+# Dry run (no network):
+print(post_to_x(text="Hello from MCP tool", dry_run=True))
 
-Expected: a JSON blob showing the assembled URL, headers, and payload, without making a network request.
-
-### Live posting (OAuth 1.0a user context)
-
-Requirements:
-- X OAuth 1.0a credentials in `.env`:
-	- `X_API_API_KEY`
-	- `X_API_API_KEY_SECRET`
-	- `X_API_ACCESS_TOKEN`
-	- `X_API_ACCESS_TOKEN_SECRET`
-- App permissions that allow posting (tweet.write)
-
-Run (be careful: this will attempt to post):
-
-```powershell
-python .\scripts\smoke_post.py "Your live tweet text" --no-dry-run
+# Live post (requires OAuth1 credentials and write permission):
+print(post_to_x(text="Posting via MCP tool", dry_run=False))
 ```
 
 Notes:
-- If only an app bearer token or OAuth2 client credentials are configured, the script will return a helpful error since posting requires user context.
-- Consider rate limits and error responses from the X API; failures will include status codes and response JSON when available.
+- Posting requires OAuth 1.0a user context credentials and an X plan that permits write access.
+- If only a bearer token or OAuth2 client credentials are present, the tool will return a clear error explaining that user context is required for posting.
 
 ## Roadmap to a working MCP server
 
-1. Add an MCP server in `main.py` (or `src/server.py`) that registers tool functions from `src/tools`.
-2. Implement `x_post.post_to_x(...)` with real API calls using `src/client.py` (add auth, error handling, rate limits, etc.). OAuth1 request signing and/or OAuth2 token exchange will be required depending on auth mode. (OAuth1 live posting path is implemented.)
-3. Expose the tool to the MCP runtime (e.g., via `@mcp.tool` decorator or explicit registration, depending on the SDK API version).
-4. Document required environment variables/secrets for the external API.
-5. Add a simple test or script to smoke-test the tool in isolation.
+1. Add an MCP server in `main.py` (or `src/server.py`) and register `post_to_x`.
+2. OAuth1 live posting path is implemented in `src/client.py`; extend for media uploads as needed.
+3. Expose the tool to the MCP runtime (decorator or registration – per MCP SDK version).
+4. Document required environment variables/secrets (see `.env.example`).
+5. Add rate limit handling and retries for production workloads.
 
 ## Notes
 
 - The Python version in `pyproject.toml` is set to `>=3.13`. If your environment uses an earlier version, either install Python 3.13 or relax this constraint.
-- The README will evolve as the MCP server wiring and tools are implemented.
+- Keep your real `.env` out of version control. Only commit `.env.example`.
 
