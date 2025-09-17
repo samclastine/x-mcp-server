@@ -96,7 +96,31 @@ Optional variables:
 
 ## Using the tool in your MCP server
 
-Register the tool in your MCP server process and call it from your MCP client. A minimal example of using the function directly (non-MCP) looks like this:
+You can run the included MCP server that exposes `x_post` over STDIO, or import the function directly.
+
+### Run the included MCP server
+
+This starts a FastMCP server named `x-post` that exposes the `x_post` tool.
+
+With UV (recommended):
+```powershell
+uv run src/server.py
+```
+
+With Python directly:
+```powershell
+python src/server.py
+```
+
+Use any MCP-compatible client to call the `x_post` tool with parameters:
+- text (str, required)
+- media_url (str, optional)
+- metadata (object, optional)
+- dry_run (bool, default true)
+
+### Use the function directly (non-MCP)
+
+A minimal example:
 
 ```python
 from src.tools.func.x_post import post_to_x
