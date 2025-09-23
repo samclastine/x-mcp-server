@@ -148,7 +148,3 @@ def like_tweet_by_tweetId(
     """
     return _like_tweet_by_tweetId(tweet_id=tweet_id, user_id=user_id, dry_run=dry_run)
 
-
-if __name__ == "__main__":
-    mcp.run(transport="http", host="0.0.0.0", port=8000)
-    # mcp.run(transport="stdio")
