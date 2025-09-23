@@ -7,7 +7,7 @@ Production-ready scaffold for an X (Twitter) toolset exposed by a Model Context 
 - Python package targeting Python 3.13+
 - Uses the `mcp` Python package (with CLI extras) to build an MCP-compliant server
 - Clean separation between:
-	- entry point / server (`src/server.py`)
+	- entry point / server (`server.py`)
 	- external service client(s) (`src/client.py`)
 	- tool implementations (`src/tools/**`)
 
@@ -61,13 +61,19 @@ uv venv --python 3.13
 uv sync
 ```
 
-2) Run the current entry point:
+2) Run the included MCP server over STDIO:
 
 ```powershell
-python .\main.py
+uv run .\server.py
+# or
+python .\server.py
 ```
 
-This repository ships a tool and client; the `main.py` is a placeholder. You’ll typically import and register the tool in your MCP server process.
+If you are embedding this server inside another async runtime and see an error like "Already running asyncio in this thread", import `server.py` but prevent auto-run:
+
+```powershell
+$env:MCP_AUTORUN = "0"; python -c "import server; server.mcp.run()"  # or call from your own loop
+```
 
 ## Configure authentication for X API (step by step)
 
@@ -106,12 +112,12 @@ This starts a FastMCP server named `x-post` that exposes the tools below over ST
 
 With UV (recommended):
 ```powershell
-uv run src/server.py
+uv run .\server.py
 ```
 
 With Python directly:
 ```powershell
-python src/server.py
+python .\server.py
 ```
 
 Use any MCP-compatible client to call the tools documented below.
@@ -203,4 +209,5 @@ Notes:
 
 - The Python version in `pyproject.toml` is set to `>=3.13`. If your environment uses an earlier version, either install Python 3.13 or relax this constraint.
 - Keep your real `.env` out of version control. Only commit `.env.example`.
+ - If deploying to a serverless or managed runtime that already runs an asyncio event loop, set `MCP_AUTORUN=0` and start the server from within that loop to avoid "Already running asyncio" errors.
 

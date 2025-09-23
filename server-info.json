@@ -1,0 +1,415 @@
+{
+  "server": {
+    "name": "x-post",
+    "instructions": null,
+    "version": null,
+    "generation": 1,
+    "capabilities": {
+      "tools": {
+        "listChanged": true
+      },
+      "resources": {
+        "subscribe": false,
+        "listChanged": false
+      },
+      "prompts": {
+        "listChanged": false
+      },
+      "logging": {}
+    }
+  },
+  "environment": {
+    "fastmcp": "2.12.3",
+    "mcp": "1.14.0"
+  },
+  "tools": [
+    {
+      "key": "x_post",
+      "name": "x_post",
+      "description": "Post text to X (Twitter).\n\n- dry_run=True (default) returns the request details without network calls.\n- dry_run=False attempts a live POST (requires OAuth1 credentials with write permissions).\n",
+      "input_schema": {
+        "properties": {
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "media_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Media Url"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Metadata"
+          },
+          "dry_run": {
+            "default": true,
+            "title": "Dry Run",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "x_postArguments",
+        "type": "object"
+      },
+      "output_schema": null,
+      "annotations": null,
+      "tags": null,
+      "enabled": null,
+      "title": null,
+      "meta": null
+    },
+    {
+      "key": "x_me",
+      "name": "x_me",
+      "description": "Get the authenticated user's profile (GET /2/users/me).\n\n- user_fields: A list of user fields to include (maps to 'user.fields').\n- expansions: A list of expansions to include.\n- tweet_fields: A list of tweet fields to include.\n- dry_run=True (default) returns the request details without network calls.\n",
+      "input_schema": {
+        "properties": {
+          "user_fields": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "User Fields"
+          },
+          "expansions": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Expansions"
+          },
+          "tweet_fields": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Tweet Fields"
+          },
+          "dry_run": {
+            "default": true,
+            "title": "Dry Run",
+            "type": "boolean"
+          }
+        },
+        "title": "x_meArguments",
+        "type": "object"
+      },
+      "output_schema": null,
+      "annotations": null,
+      "tags": null,
+      "enabled": null,
+      "title": null,
+      "meta": null
+    },
+    {
+      "key": "get_posts_by_id",
+      "name": "get_posts_by_id",
+      "description": "Get posts authored by a user ID (GET /2/users/{id}/tweets).\n\n- Auth: Prefers app bearer; falls back to OAuth1.\n- Supports common query params and dry-run mode.\n",
+      "input_schema": {
+        "properties": {
+          "user_id": {
+            "title": "User Id",
+            "type": "string"
+          },
+          "since_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Since Id"
+          },
+          "until_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Until Id"
+          },
+          "max_results": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Max Results"
+          },
+          "pagination_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Pagination Token"
+          },
+          "exclude": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Exclude"
+          },
+          "start_time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Start Time"
+          },
+          "end_time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "End Time"
+          },
+          "tweet_fields": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Tweet Fields"
+          },
+          "dry_run": {
+            "default": true,
+            "title": "Dry Run",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "user_id"
+        ],
+        "title": "get_posts_by_idArguments",
+        "type": "object"
+      },
+      "output_schema": null,
+      "annotations": null,
+      "tags": null,
+      "enabled": null,
+      "title": null,
+      "meta": null
+    },
+    {
+      "key": "x_my_timeline",
+      "name": "x_my_timeline",
+      "description": "Get the reverse-chronological timeline for the authenticated user.\n\nEndpoint: GET /2/users/:id/timelines/reverse_chronological\n",
+      "input_schema": {
+        "properties": {
+          "limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Limit"
+          },
+          "pagination": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Pagination"
+          },
+          "dry_run": {
+            "default": true,
+            "title": "Dry Run",
+            "type": "boolean"
+          }
+        },
+        "title": "x_my_timelineArguments",
+        "type": "object"
+      },
+      "output_schema": null,
+      "annotations": null,
+      "tags": null,
+      "enabled": null,
+      "title": null,
+      "meta": null
+    },
+    {
+      "key": "get__my_timeline",
+      "name": "get__my_timeline",
+      "description": "Alias of x_my_timeline (GET /2/users/:id/timelines/reverse_chronological).",
+      "input_schema": {
+        "properties": {
+          "limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Limit"
+          },
+          "pagination": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Pagination"
+          },
+          "dry_run": {
+            "default": true,
+            "title": "Dry Run",
+            "type": "boolean"
+          }
+        },
+        "title": "get__my_timelineArguments",
+        "type": "object"
+      },
+      "output_schema": null,
+      "annotations": null,
+      "tags": null,
+      "enabled": null,
+      "title": null,
+      "meta": null
+    },
+    {
+      "key": "like_tweet_by_tweetId",
+      "name": "like_tweet_by_tweetId",
+      "description": "Like a Tweet by ID on behalf of the authenticated user (POST /2/users/{id}/likes).\n\n- tweet_id: Target Tweet ID to like.\n- user_id: Optional source user ID; if omitted in live mode, it will be resolved via /users/me.\n- dry_run=True returns the request details without network calls.\n",
+      "input_schema": {
+        "properties": {
+          "tweet_id": {
+            "title": "Tweet Id",
+            "type": "string"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "User Id"
+          },
+          "dry_run": {
+            "default": true,
+            "title": "Dry Run",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "tweet_id"
+        ],
+        "title": "like_tweet_by_tweetIdArguments",
+        "type": "object"
+      },
+      "output_schema": null,
+      "annotations": null,
+      "tags": null,
+      "enabled": null,
+      "title": null,
+      "meta": null
+    }
+  ],
+  "prompts": [],
+  "resources": [],
+  "templates": []
+}

@@ -15,8 +15,10 @@ from mcp.server.fastmcp import FastMCP
 # Ensure repo root is on sys.path so `uv run src/server.py` works
 import sys as _sys
 from pathlib import Path as _Path
+import os as _os
 
-_REPO_ROOT = _Path(__file__).resolve().parents[1]
+# Ensure the repository root (this file's directory) is on sys.path so imports like `src.tools...` work
+_REPO_ROOT = _Path(__file__).resolve().parent
 if str(_REPO_ROOT) not in _sys.path:
     _sys.path.insert(0, str(_REPO_ROOT))
 
@@ -149,4 +151,10 @@ def like_tweet_by_tweetId(
 
 if __name__ == "__main__":
     # IMPORTANT: Do not print to STDOUT; FastMCP owns the protocol stream.
-    mcp.run()
+    #
+    # In some hosting environments (e.g., when embedded under an already-running asyncio loop),
+    # starting a fresh loop may raise "Already running asyncio in this thread". If you need to
+    # import this module without auto-starting the server, set MCP_AUTORUN=0 in the environment
+    # and invoke `mcp.run()` yourself from a compatible context.
+    if _os.getenv("MCP_AUTORUN", "1") != "0":
+        mcp.run()
