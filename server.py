@@ -150,11 +150,5 @@ def like_tweet_by_tweetId(
 
 
 if __name__ == "__main__":
-    # IMPORTANT: Do not print to STDOUT; FastMCP owns the protocol stream.
-    #
-    # In some hosting environments (e.g., when embedded under an already-running asyncio loop),
-    # starting a fresh loop may raise "Already running asyncio in this thread". If you need to
-    # import this module without auto-starting the server, set MCP_AUTORUN=0 in the environment
-    # and invoke `mcp.run()` yourself from a compatible context.
-    if _os.getenv("MCP_AUTORUN", "1") != "0":
-        mcp.run()
+    mcp.run(transport="http", host="0.0.0.0", port=8000)
+    # mcp.run(transport="stdio")
