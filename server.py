@@ -16,6 +16,7 @@ from mcp.server.fastmcp import FastMCP
 import sys as _sys
 from pathlib import Path as _Path
 import os as _os
+import asyncio
 
 # Ensure the repository root (this file's directory) is on sys.path so imports like `src.tools...` work
 _REPO_ROOT = _Path(__file__).resolve().parent
@@ -148,3 +149,10 @@ def like_tweet_by_tweetId(
     """
     return _like_tweet_by_tweetId(tweet_id=tweet_id, user_id=user_id, dry_run=dry_run)
 
+
+async def main():
+    # Use run_async() in async contexts
+    await mcp.run_async(transport="http", port=8000)
+
+if __name__ == "__main__":
+    asyncio.run(main())
