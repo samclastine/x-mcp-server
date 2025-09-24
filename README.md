@@ -75,6 +75,67 @@ If you are embedding this server inside another async runtime and see an error l
 $env:MCP_AUTORUN = "0"; python -c "import server; server.mcp.run()"  # or call from your own loop
 ```
 
+## Running with FastMCP (recommended)
+
+You have two reliable ways to run with FastMCP without hitting nested asyncio issues.
+
+1) Development with Inspector + Proxy (no event loop conflicts):
+
+```powershell
+uv run fastmcp dev fastmcp_server.py --python 3.13 --with httpx
+```
+
+This will print a URL like `http://localhost:6274/?MCP_PROXY_AUTH_TOKEN=...` – open it to use the MCP Inspector.
+
+2) Direct transports without the FastMCP CLI managing the loop:
+
+HTTP server (127.0.0.1:8000):
+
+```powershell
+uv run python .\scripts\run_http.py
+```
+
+STDIO server:
+
+```powershell
+uv run python .\scripts\run_stdio.py
+```
+
+These scripts import `fastmcp_server.app` (the FastMCP instance) and call `.run(...)` directly, avoiding the "Already running asyncio" error that can occur when a host tool already owns an event loop.
+
+### Using FastMCP run directly (advanced)
+
+If you must use the CLI directly, point it at the clean entry that only exports the app object and does not call `.run()` itself:
+
+```powershell
+uv run fastmcp run fastmcp_server.py --python 3.13 --with httpx --transport stdio --no-banner
+```
+
+If you see `Already running asyncio in this thread`, prefer the `dev` command or the `scripts/run_*` helpers above.
+
+### Inspector manual configuration
+
+If configuring the Inspector manually (without `fastmcp dev`), select transport "stdio" and use:
+
+- Command: `uv`
+- Args: `run --python 3.13 --with httpx fastmcp run fastmcp_server.py --no-banner`
+
+Or run the proxy via `fastmcp dev` and open the printed URL with token.
+
+### fastmcp.json (one-liner run)
+
+This repo includes a `fastmcp.json` so you can run with a single command:
+
+```powershell
+uv run fastmcp run
+```
+
+Notes:
+- The config points to `fastmcp_server.py:app` with `transport: stdio`.
+- If you see `Already running asyncio in this thread`, your host likely already owns an event loop. In that case, prefer:
+	- `uv run fastmcp dev fastmcp_server.py --python 3.13 --with httpx` (Inspector + Proxy), or
+	- `uv run python .\scripts\run_http.py` or `uv run python .\scripts\run_stdio.py` (direct runners)
+
 ## Configure authentication for X API (step by step)
 
 Anyone can bring their own X API credentials and use this tool.

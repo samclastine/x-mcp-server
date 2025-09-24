@@ -1,0 +1,14 @@
+{
+  "$schema": "https://fastmcp.com/schema/v2",
+  "name": "x-post",
+  "source": {
+    "type": "filesystem",
+    "path": "fastmcp_server.py",
+    "export": "app"
+  },
+  "transport": "stdio",
+  "python": {
+    "version": "3.13",
+    "with": ["httpx"]
+  }
+}

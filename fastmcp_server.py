@@ -1,7 +1,6 @@
-"""MCP server exposing an X posting tool via STDIO.
+"""FastMCP entry point for the X MCP server.
 
-This uses FastMCP to register a single tool that posts text to X (Twitter).
-Logs go to STDERR; do not print to STDOUT.
+This module provides a clean entry point for fastmcp CLI without asyncio conflicts.
 """
 
 from __future__ import annotations
@@ -10,15 +9,13 @@ import sys
 import logging
 from typing import Optional, Dict, Any
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp.server.server import FastMCP
 
-# Ensure repo root is on sys.path so `uv run src/server.py` works
+# Ensure repo root is on sys.path so imports work
 import sys as _sys
 from pathlib import Path as _Path
-import os as _os
-import asyncio
 
-# Ensure the repository root (this file's directory) is on sys.path so imports like `src.tools...` work
+# Ensure the repository root is on sys.path
 _REPO_ROOT = _Path(__file__).resolve().parent
 if str(_REPO_ROOT) not in _sys.path:
     _sys.path.insert(0, str(_REPO_ROOT))
@@ -29,15 +26,12 @@ from src.tools.func.x_get_posts_by_id import get_posts_by_id as _get_posts_by_id
 from src.tools.func.x_my_timeline import x_my_timeline as _x_my_timeline
 from src.tools.func.x_like import like_tweet_by_tweetId as _like_tweet_by_tweetId
 
-
-# ── logging to STDERR ─────────────────────────────────────────────────────────
+# Configure logging
 logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 log = logging.getLogger("mcp-x-post")
 
-
-# ── MCP server ───────────────────────────────────────────────────────────────
+# Create FastMCP server
 mcp = FastMCP("x-post")
-
 
 @mcp.tool()
 def x_post(
@@ -52,7 +46,6 @@ def x_post(
     - dry_run=False attempts a live POST (requires OAuth1 credentials with write permissions).
     """
     return post_to_x(text=text, media_url=media_url, metadata=metadata, dry_run=dry_run)
-
 
 @mcp.tool()
 def x_me(
@@ -74,7 +67,6 @@ def x_me(
         tweet_fields=tweet_fields,
         dry_run=dry_run,
     )
-
 
 @mcp.tool()
 def get_posts_by_id(
@@ -107,7 +99,6 @@ def get_posts_by_id(
         dry_run=dry_run,
     )
 
-
 @mcp.tool()
 def x_my_timeline(
     limit: Optional[int] = None,
@@ -121,19 +112,6 @@ def x_my_timeline(
     if limit is not None and limit < 1:
         raise ValueError("limit must be >= 1")
     return _x_my_timeline(limit=limit, pagination=pagination, dry_run=dry_run)
-
-
-@mcp.tool()
-def get__my_timeline(
-    limit: Optional[int] = None,
-    pagination: Optional[str] = None,
-    dry_run: bool = True,
-) -> Dict[str, Any]:
-    """Alias of x_my_timeline (GET /2/users/:id/timelines/reverse_chronological)."""
-    if limit is not None and limit < 1:
-        raise ValueError("limit must be >= 1")
-    return _x_my_timeline(limit=limit, pagination=pagination, dry_run=dry_run)
-
 
 @mcp.tool()
 def like_tweet_by_tweetId(
@@ -150,9 +128,8 @@ def like_tweet_by_tweetId(
     return _like_tweet_by_tweetId(tweet_id=tweet_id, user_id=user_id, dry_run=dry_run)
 
 
-async def main():
-    # Use run_async() in async contexts
-    await mcp.run_async(transport="http", port=8000)
+# Export the server instance for fastmcp CLI
+app = mcp
+server = mcp
 
-if __name__ == "__main__":
-    asyncio.run(main())
+
